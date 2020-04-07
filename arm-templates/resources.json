@@ -1,0 +1,228 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "prefix": {
+      "type": "string",
+      "maxLength": 9
+    },
+    "storageAccountSkuName": {
+      "type": "string",
+      "defaultValue": "Standard_LRS",
+      "allowedValues": [
+        "Standard_LRS",
+        "Standard_GRS",
+        "Standard_RAGRS",
+        "Standard_ZRS",
+        "Premium_LRS",
+        "Premium_ZRS",
+        "Standard_GZRS",
+        "Standard_RAGZRS"
+      ]
+    },
+    "computerVisionSkuName": {
+      "type": "string",
+      "defaultValue": "F0",
+      "allowedValues": [
+        "F0",
+        "S1"
+      ]
+    },
+    "luisSkuName": {
+      "type": "string",
+      "defaultValue": "F0",
+      "allowedValues": [
+        "F0",
+        "S0"
+      ]
+    },
+    "luisAuthoringLocation": {
+      "type": "string",
+      "defaultValue": "westus",
+      "allowedValues": [
+        "australiaeast",
+        "westeurope",
+        "westus"
+      ]
+    },
+    "luisAuthoringSkuName": {
+      "type": "string",
+      "defaultValue": "F0",
+      "allowedValues": [
+        "F0"
+      ]
+    }
+  },
+  "variables": {
+    "location": "[resourceGroup().location]",
+    "functionName": "[resourceName.create(parameters('prefix'), 'func')]",
+    "appServicePlanName": "[resourceName.create(parameters('prefix'), 'plan')]",
+    "storageAccountName": "[concat(parameters('prefix'), uniqueString(resourceGroup().id, 'storage'))]",
+    "dataLakeStorageName": "[concat(parameters('prefix'), uniqueString(resourceGroup().id, 'datalake'))]",
+    "appInsightsName": "[resourceName.create(parameters('prefix'), 'insights')]",
+    "computerVisionName": "[resourceName.create(parameters('prefix'), 'vision')]",
+    "luisName": "[resourceName.create(parameters('prefix'), 'luis')]",
+    "luisAuthoringName": "[resourceName.create(parameters('prefix'), 'luis-authoring')]"
+  },
+  "resources": [
+    {
+      "name": "[variables('computerVisionName')]",
+      "type": "Microsoft.CognitiveServices/accounts",
+      "apiVersion": "2017-04-18",
+      "sku": {
+        "name": "[parameters('computerVisionSkuName')]"
+      },
+      "kind": "ComputerVision",
+      "location": "[variables('location')]",
+      "properties": {}
+    },
+    {
+      "name": "[variables('luisName')]",
+      "type": "Microsoft.CognitiveServices/accounts",
+      "apiVersion": "2017-04-18",
+      "sku": {
+        "name": "[parameters('luisSkuName')]"
+      },
+      "kind": "LUIS",
+      "location": "[variables('location')]",
+      "properties": {
+        "customSubDomainName": "[variables('luisName')]"
+      }
+    },
+    {
+      "name": "[variables('luisAuthoringName')]",
+      "type": "Microsoft.CognitiveServices/accounts",
+      "apiVersion": "2017-04-18",
+      "sku": {
+        "name": "[parameters('luisAuthoringSkuName')]"
+      },
+      "kind": "LUIS",
+      "location": "[parameters('luisAuthoringLocation')]",
+      "properties": {
+        "customSubDomainName": "[variables('luisAuthoringName')]"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.CognitiveServices/accounts', variables('luisName'))]"
+      ]
+    },
+    {
+      "name": "[variables('storageAccountName')]",
+      "type": "Microsoft.Storage/storageAccounts",
+      "apiVersion": "2019-06-01",
+      "location": "[variables('location')]",
+      "sku": {
+        "name": "[parameters('storageAccountSkuName')]"
+      },
+      "kind": "StorageV2",
+      "properties": {
+      }
+    },
+    {
+      "name": "[variables('appServicePlanName')]",
+      "type": "Microsoft.Web/serverfarms",
+      "apiVersion": "2019-08-01",
+      "location": "[variables('location')]",
+      "sku": {
+        "name": "Y1",
+        "tier": "Dynamic"
+      },
+      "properties": {
+        "name": "[variables('appServicePlanName')]"
+      }
+    },
+    {
+      "name": "[variables('appInsightsName')]",
+      "type": "Microsoft.Insights/components",
+      "apiVersion": "2015-05-01",
+      "location": "[variables('location')]",
+      "kind": "web",
+      "tags": {
+        "[concat('hidden-link:', resourceGroup().id, '/providers/Microsoft.Web/sites/', variables('functionName'))]": "Resource"
+      },
+      "properties": {
+        "Application_Type": "web",
+        "ApplicationId": "[variables('appInsightsName')]"
+      }
+    },
+    {
+      "name": "[variables('functionName')]",
+      "type": "Microsoft.Web/sites",
+      "apiVersion": "2015-08-01",
+      "location": "[variables('location')]",
+      "kind": "functionapp",
+      "dependsOn": [
+        "[resourceId('Microsoft.Web/serverfarms', variables('appServicePlanName'))]",
+        "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName'))]"
+      ],
+      "properties": {
+        "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', variables('appServicePlanName'))]",
+        "siteConfig": {
+          "appSettings": [
+            {
+              "name": "AzureWebJobsDashboard",
+              "value": "[concat('DefaultEndpointsProtocol=https;AccountName=', variables('storageAccountName'), ';AccountKey=', listKeys(resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName')),'2019-06-01').keys[0].value)]"
+            },
+            {
+              "name": "AzureWebJobsStorage",
+              "value": "[concat('DefaultEndpointsProtocol=https;AccountName=', variables('storageAccountName'), ';AccountKey=', listKeys(resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName')),'2019-06-01').keys[0].value)]"
+            },
+            {
+              "name": "FUNCTIONS_EXTENSION_VERSION",
+              "value": "~2"
+            },
+            {
+              "name": "APPINSIGHTS_INSTRUMENTATIONKEY",
+              "value": "[reference(resourceId('microsoft.insights/components/', variables('appInsightsName')), '2015-05-01').InstrumentationKey]"
+            },
+            {
+              "name": "FUNCTIONS_WORKER_RUNTIME",
+              "value": "node"
+            },
+            {
+              "name": "WEBSITE_NODE_DEFAULT_VERSION",
+              "value": "~12"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "[variables('dataLakeStorageName')]",
+      "type": "Microsoft.Storage/storageAccounts",
+      "apiVersion": "2019-06-01",
+      "location": "[variables('location')]",
+      "sku": {
+        "name": "[parameters('storageAccountSkuName')]"
+      },
+      "kind": "StorageV2",
+      "properties": {
+        "isHnsEnabled": true
+      }
+    }
+  ],
+  "outputs": {
+  },
+  "functions": [
+    {
+      "namespace": "resourceName",
+      "members": {
+        "create": {
+          "parameters": [
+            {
+              "name": "prefix",
+              "type": "string"
+            },
+            {
+              "name": "resourceName",
+              "type": "string"
+            }
+          ],
+          "output": {
+            "type": "string",
+            "value": "[concat(parameters('prefix'), '-', parameters('resourceName'))]"
+          }
+        }
+      }
+    }
+  ]
+}
