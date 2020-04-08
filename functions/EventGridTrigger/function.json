@@ -1,0 +1,18 @@
+{
+  "bindings": [
+    {
+      "type": "eventGridTrigger",
+      "name": "eventGridEvent",
+      "direction": "in"
+    },
+    {
+      "name": "storage",
+      "type": "blob",
+      "direction": "in",
+      "path": "{data.url}",
+      "connection": "STORAGE_CONNECTION_STRING",
+      "dataType": "binary"
+    }
+  ],
+  "scriptFile": "../dist/EventGridTrigger/index.js"
+}

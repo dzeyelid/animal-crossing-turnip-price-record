@@ -51,6 +51,14 @@
       "allowedValues": [
         "F0"
       ]
+    },
+    "eventGridTriggerFunctionName": {
+      "type": "string",
+      "defaultValue": "EventGridTrigger"
+    },
+    "capturesContainerName": {
+      "type": "string",
+      "defaultValue": "caputures"
     }
   },
   "variables": {
@@ -58,11 +66,13 @@
     "functionName": "[resourceName.create(parameters('prefix'), 'func')]",
     "appServicePlanName": "[resourceName.create(parameters('prefix'), 'plan')]",
     "storageAccountName": "[concat(parameters('prefix'), uniqueString(resourceGroup().id, 'storage'))]",
+    "functionStorageName": "[concat(parameters('prefix'), uniqueString(resourceGroup().id, 'function'))]",
     "dataLakeStorageName": "[concat(parameters('prefix'), uniqueString(resourceGroup().id, 'datalake'))]",
     "appInsightsName": "[resourceName.create(parameters('prefix'), 'insights')]",
     "computerVisionName": "[resourceName.create(parameters('prefix'), 'vision')]",
     "luisName": "[resourceName.create(parameters('prefix'), 'luis')]",
-    "luisAuthoringName": "[resourceName.create(parameters('prefix'), 'luis-authoring')]"
+    "luisAuthoringName": "[resourceName.create(parameters('prefix'), 'luis-authoring')]",
+    "eventGridSubscriptionName": "[resourceName.create(parameters('prefix'), 'eg-subscription')]"
   },
   "resources": [
     {
@@ -114,6 +124,67 @@
         "name": "[parameters('storageAccountSkuName')]"
       },
       "kind": "StorageV2",
+      "properties": {},
+      "resources": [
+        {
+          "name": "default",
+          "type": "blobServices",
+          "apiVersion": "2019-06-01",
+          "properties": {
+          },
+          "resources": [
+            {
+              "name": "[parameters('capturesContainerName')]",
+              "type": "containers",
+              "apiVersion": "2019-06-01",
+              "properties": {
+                "publicAccess": "Container"
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Storage/storageAccounts/blobServices', variables('storageAccountName'), 'default')]"
+              ]
+            }
+          ],
+          "dependsOn": [
+            "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName'))]"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "[concat(variables('storageAccountName'), '/Microsoft.EventGrid/', variables('eventGridSubscriptionName'))]",
+      "type": "Microsoft.Storage/storageAccounts/providers/eventSubscriptions",
+      "apiVersion": "2020-04-01-preview",
+      "properties": {
+        "destination": {
+          "endpointType": "AzureFunction",
+          "properties": {
+            "resourceId": "[resourceId('Microsoft.Web/sites/functions', variables('functionName'), parameters('eventGridTriggerFunctionName'))]"
+          },
+          "filter": {
+            "subjectBeginsWith": "",
+            "subjectEndsWith": "",
+            "isSubjectCaseSensitive": false,
+            "inclidedEventTypes": [
+              "All"
+            ]
+          }
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName'))]",
+        "[resourceId('Microsoft.Web/sites', variables('functionName'))]"
+      ]
+    },
+    {
+      "name": "[variables('functionStorageName')]",
+      "type": "Microsoft.Storage/storageAccounts",
+      "apiVersion": "2019-06-01",
+      "location": "[variables('location')]",
+      "sku": {
+        "name": "[parameters('storageAccountSkuName')]"
+      },
+      "kind": "StorageV2",
       "properties": {
       }
     },
@@ -152,6 +223,7 @@
       "kind": "functionapp",
       "dependsOn": [
         "[resourceId('Microsoft.Web/serverfarms', variables('appServicePlanName'))]",
+        "[resourceId('Microsoft.Storage/storageAccounts', variables('functionStorageName'))]",
         "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName'))]"
       ],
       "properties": {
@@ -160,11 +232,11 @@
           "appSettings": [
             {
               "name": "AzureWebJobsDashboard",
-              "value": "[concat('DefaultEndpointsProtocol=https;AccountName=', variables('storageAccountName'), ';AccountKey=', listKeys(resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName')),'2019-06-01').keys[0].value)]"
+              "value": "[concat('DefaultEndpointsProtocol=https;AccountName=', variables('functionStorageName'), ';AccountKey=', listKeys(resourceId('Microsoft.Storage/storageAccounts', variables('functionStorageName')),'2019-06-01').keys[0].value)]"
             },
             {
               "name": "AzureWebJobsStorage",
-              "value": "[concat('DefaultEndpointsProtocol=https;AccountName=', variables('storageAccountName'), ';AccountKey=', listKeys(resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName')),'2019-06-01').keys[0].value)]"
+              "value": "[concat('DefaultEndpointsProtocol=https;AccountName=', variables('functionStorageName'), ';AccountKey=', listKeys(resourceId('Microsoft.Storage/storageAccounts', variables('functionStorageName')),'2019-06-01').keys[0].value)]"
             },
             {
               "name": "FUNCTIONS_EXTENSION_VERSION",
@@ -181,6 +253,10 @@
             {
               "name": "WEBSITE_NODE_DEFAULT_VERSION",
               "value": "~12"
+            },
+            {
+              "name": "STORAGE_CONNECTION_STRING",
+              "value": "[concat('DefaultEndpointsProtocol=https;AccountName=', variables('storageAccountName'), ';AccountKey=', listKeys(resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName')),'2019-06-01').keys[0].value)]"
             }
           ]
         }
@@ -201,6 +277,18 @@
     }
   ],
   "outputs": {
+    "functionName": {
+      "type": "string",
+      "value": "[variables('functionName')]"
+    },
+    "storageAccountName": {
+      "type": "string",
+      "value": "[variables('storageAccountName')]"
+    },
+    "dataLakeStorageName": {
+      "type": "string",
+      "value": "[variables('dataLakeStorageName')]"
+    }
   },
   "functions": [
     {
