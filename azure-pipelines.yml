@@ -38,6 +38,10 @@ variables:
   functionsPackagesDir: 'arm-templates/function-packages'
   functionsPackageName: 'functions.zip'
 
+  gitHubUrl: git@github.com:dzeyelid/animal-crossing-turnip-price-record.git
+  gitHubConfigUserName: Azure DevOps Pipeline runner
+  gitHubConfigUserEmail: dzeyelid+devops@gmail.com
+
 stages:
 - stage: Build
   displayName: Build stage
@@ -99,15 +103,20 @@ stages:
         TargetFolder: '~/.ssh/'
 
     - script: |
-        echo $(Build.SourceBranchName)
-        git config --list
-        git config user.name "Azure DevOps Pipeline runner"
-        git config user.email "dzeyelid+devops@gmail.com"
+        eval $(ssh-agent -s)
+        ssh-add ~/.ssh/$(sshPrivateKeyFileName)
+      displayName: Enable ssh private file
+
+    - script: |
+        git clone $(gitHubUrl)
+        git config user.name $(gitHubConfigUserName)
+        git config user.email $(gitHubConfigUserEmail)
         git switch -c $(Build.SourceBranchName) --track origin/$(Build.SourceBranchName)
         git add $(functionsPackagesDir)/$(functionsPackageName)
         git commit -m "Update the function package"
         git push origin $(Build.SourceBranchName)
       displayName: Push zip archive to the branch
+      workingDirectory: $(Agent.TempDirectory)
 
 # - stage: Deploy
 #   displayName: Deploy stage
