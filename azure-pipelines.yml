@@ -41,6 +41,7 @@ variables:
   gitHubUrl: git@github.com:dzeyelid/animal-crossing-turnip-price-record.git
   gitHubConfigUserName: Azure DevOps Pipeline runner
   gitHubConfigUserEmail: dzeyelid+devops@gmail.com
+  repositoryDir: animal-crossing-turnip-price-record
 
 stages:
 - stage: Build
@@ -101,6 +102,7 @@ stages:
         chmod 600 $(Agent.TempDirectory)/$(sshPrivateKeyFileName)
         ssh-add $(Agent.TempDirectory)/$(sshPrivateKeyFileName)
         git clone $(gitHubUrl)
+        cd $(repositoryDir)
         git config user.name $(gitHubConfigUserName)
         git config user.email $(gitHubConfigUserEmail)
         git switch -c $(Build.SourceBranchName) --track origin/$(Build.SourceBranchName)
