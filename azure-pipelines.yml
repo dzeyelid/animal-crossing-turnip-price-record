@@ -75,6 +75,7 @@ stages:
         git config user.email "$(gitHubConfigUserEmail)"
         git switch -c $(Build.SourceBranchName) --track origin/$(Build.SourceBranchName)
       displayName: Clone the repository to push later
+      workingDirectory: $(Agent.TempDirectory)
 
     - task: NodeTool@0
       inputs:
