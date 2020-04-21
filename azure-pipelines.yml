@@ -15,8 +15,8 @@ trigger:
 
 variables:
 
-  # # Azure Resource Manager connection created during pipeline creation
-  # azureSubscription: $(azureSubscription)
+  # Azure Resource Manager connection created during pipeline creation
+  azureSubscription: $(azureSubscription)
 
   # # Function app name
   # functionAppName: ''
@@ -29,6 +29,9 @@ variables:
 
   targetDir: functions
 
+  keyVaultName: 'azure-devops-integration'
+  keyVaultKeyNameForGitHubAccess: 'github-access'
+
 stages:
 - stage: Build
   displayName: Build stage
@@ -39,6 +42,13 @@ stages:
       vmImage: $(vmImageName)
       
     steps:
+
+    - task: AzureKeyVault@1
+      inputs:
+        azureSubscription: $(azureSubscription)
+        keyVaultName: $(keyVaultname)
+        secretsFilter: $(keyVaultKeyNameForGitHubAccess)
+
     - task: NodeTool@0
       inputs:
         versionSpec: '12.x'
