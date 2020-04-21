@@ -96,15 +96,9 @@ stages:
       inputs:
         secureFile: $(sshPrivateKeyFileName)
 
-    - task: CopyFiles@2
-      inputs:
-        SourceFolder: $(Agent.TempDirectory)
-        Contents: $(sshPrivateKeyFileName)
-        TargetFolder: '~/.ssh/'
-
     - script: |
         eval $(ssh-agent -s)
-        ssh-add ~/.ssh/$(sshPrivateKeyFileName)
+        ssh-add $(Agent.TempDirectory)/$(sshPrivateKeyFileName)
       displayName: Enable ssh private file
 
     - script: |
