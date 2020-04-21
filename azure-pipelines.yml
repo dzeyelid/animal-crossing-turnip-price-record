@@ -103,8 +103,8 @@ stages:
         ssh-add $(Agent.TempDirectory)/$(sshPrivateKeyFileName)
         git clone $(gitHubUrl)
         cd $(repositoryDir)
-        git config user.name $(gitHubConfigUserName)
-        git config user.email $(gitHubConfigUserEmail)
+        git config user.name "$(gitHubConfigUserName)"
+        git config user.email "$(gitHubConfigUserEmail)"
         git switch -c $(Build.SourceBranchName) --track origin/$(Build.SourceBranchName)
         git add $(functionsPackagesDir)/$(functionsPackageName)
         git commit -m "Update the function package"
