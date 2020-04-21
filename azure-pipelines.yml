@@ -97,6 +97,7 @@ stages:
         TargetFolder: '~/.ssh/'
 
     - script: |
+        echo $(Build.SourceBranchName)
         git config user.name "Azure DevOps Pipeline runner"
         git config user.email "dzeyelid+devops@gmail.com"
         git switch -c $(Build.SourceBranchName) --track origin/$(Build.SourceBranchName)
