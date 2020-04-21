@@ -101,7 +101,7 @@ stages:
         git config user.email "dzeyelid+devops@gmail.com"
         git add $(functionsPackagesDir)/$(functionsPackageName)
         git commit -m "Update the function package"
-        git push origin $(Build.SourceBranchName)
+        git push origin
       displayName: Push zip archive to the branch
 
 # - stage: Deploy
