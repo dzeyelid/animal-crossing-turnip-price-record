@@ -60,6 +60,14 @@ stages:
     #     keyVaultName: $(keyVaultname)
     #     secretsFilter: $(keyVaultKeyNameForGitHubAccess)
 
+    - script: |
+        mkdir ~/.ssh
+        chmod 700 ~/.ssh
+        echo "Host github.com" >> ~/.ssh/config
+        echo "\thostName github.com" >> ~/.ssh/config
+        echo "\tIdentityFile ~/.ssh/$(sshPrivateKeyFileName)" >> ~/.ssh/config
+      displayName: Create ssh config file
+
     - task: DownloadSecureFile@1
       name: downloadedSshPrivateKey
       inputs:
@@ -70,12 +78,6 @@ stages:
         SourceFolder: $(Agent.TempDirectory)
         Contents: $(sshPrivateKeyFileName)
         TargetFolder: ~/.ssh
-
-    - script: |
-        echo "Host github.com" >> ~/.ssh/config
-        echo "\thostName github.com" >> ~/.ssh/config
-        echo "\tIdentityFile ~/.ssh/$(sshPrivateKeyFileName)" >> ~/.ssh/config
-      displayName: Create ssh config file
 
     - script: |
         git clone $(gitHubUrl)
