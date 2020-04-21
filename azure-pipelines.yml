@@ -61,8 +61,8 @@ stages:
     #     secretsFilter: $(keyVaultKeyNameForGitHubAccess)
 
     - script: |
-        ls ~
-        ls $(Agent.HomeDirectory)
+        echo ~
+        echo $(Agent.HomeDirectory)
         mkdir $(Agent.HomeDirectory)/.ssh
         chmod 700 $(Agent.HomeDirectory)/.ssh
         echo "Host github.com" >> $(Agent.HomeDirectory)/.ssh/config
