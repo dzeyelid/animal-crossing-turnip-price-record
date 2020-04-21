@@ -25,4 +25,4 @@ After that, your turnip price recording system collect the capture images and re
 ### Integration between Blob Storage and Azure Functions
 
 
-### 
+### Store the turnip price to Azure Data Lake Storage
