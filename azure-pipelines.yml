@@ -61,9 +61,9 @@ stages:
     #     secretsFilter: $(keyVaultKeyNameForGitHubAccess)
 
     - script: |
-        mkdir -p $(Pipeline.Workspace)/ssh
-        chmod $(Pipeline.Workspace)/ssh
-      displayName: Create ssh config file
+        mkdir ssh
+      displayName: Create a directoty to store ssh files
+      workingDirectory: $(Pipeline.Workspace)
 
     - task: DownloadSecureFile@1
       name: downloadedSshPrivateKey
@@ -75,6 +75,11 @@ stages:
         SourceFolder: $(Agent.TempDirectory)
         Contents: $(sshPrivateKeyFileName)
         TargetFolder: $(Pipeline.Workspace)/ssh
+
+    - script: |
+        chmod 600 ssh/$(sshPrivateKeyFileName)
+      displayName: Change mode of ssh private key file
+      workingDirectory: $(Pipeline.Workspace)
 
     - script: |
         eval $(ssh-agent -s)
