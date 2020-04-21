@@ -60,6 +60,22 @@ stages:
     #     keyVaultName: $(keyVaultname)
     #     secretsFilter: $(keyVaultKeyNameForGitHubAccess)
 
+    - task: DownloadSecureFile@1
+      name: downloadedSshPrivateKey
+      inputs:
+        secureFile: $(sshPrivateKeyFileName)
+
+    - script: |
+        eval $(ssh-agent -s)
+        chmod 600 $(Agent.TempDirectory)/$(sshPrivateKeyFileName)
+        ssh-add $(Agent.TempDirectory)/$(sshPrivateKeyFileName)
+        git clone $(gitHubUrl)
+        cd $(repositoryDir)
+        git config user.name "$(gitHubConfigUserName)"
+        git config user.email "$(gitHubConfigUserEmail)"
+        git switch -c $(Build.SourceBranchName) --track origin/$(Build.SourceBranchName)
+      displayName: Clone the repository to push later
+
     - task: NodeTool@0
       inputs:
         versionSpec: '12.x'
@@ -86,31 +102,18 @@ stages:
         rootFolderOrFile: $(System.DefaultWorkingDirectory)/$(targetDir)
         includeRootFolder: false
         archiveType: zip
-        archiveFile: $(System.DefaultWorkingDirectory)/$(functionsPackagesDir)/$(functionsPackageName)
+        archiveFile: $(Agent.TempDirectory)/$(repositoryDir)/$(functionsPackagesDir)/$(functionsPackageName)
         replaceExistingArchive: true
 
     # - upload: $(Build.ArtifactStagingDirectory)/$(Build.BuildId).zip
     #   artifact: drop
 
-    - task: DownloadSecureFile@1
-      name: downloadedSshPrivateKey
-      inputs:
-        secureFile: $(sshPrivateKeyFileName)
-
     - script: |
-        eval $(ssh-agent -s)
-        chmod 600 $(Agent.TempDirectory)/$(sshPrivateKeyFileName)
-        ssh-add $(Agent.TempDirectory)/$(sshPrivateKeyFileName)
-        git clone $(gitHubUrl)
-        cd $(repositoryDir)
-        git config user.name "$(gitHubConfigUserName)"
-        git config user.email "$(gitHubConfigUserEmail)"
-        git switch -c $(Build.SourceBranchName) --track origin/$(Build.SourceBranchName)
         git add $(functionsPackagesDir)/$(functionsPackageName)
         git commit -m "Update the function package"
         git push origin $(Build.SourceBranchName)
       displayName: Push zip archive to the branch
-      workingDirectory: $(Agent.TempDirectory)
+      workingDirectory: $(Agent.TempDirectory)/$(repositoryDir)
 
 # - stage: Deploy
 #   displayName: Deploy stage
