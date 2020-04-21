@@ -61,14 +61,12 @@ stages:
     #     secretsFilter: $(keyVaultKeyNameForGitHubAccess)
 
     - script: |
-        echo ~
-        echo $(Agent.HomeDirectory)
-        mkdir $(Agent.HomeDirectory)/.ssh
-        chmod 700 $(Agent.HomeDirectory)/.ssh
-        echo "Host github.com" >> $(Agent.HomeDirectory)/.ssh/config
-        echo "  HostName github.com" >> $(Agent.HomeDirectory)/.ssh/config
-        echo "  IdentityFile ~/.ssh/$(sshPrivateKeyFileName)" >> $(Agent.HomeDirectory)/.ssh/config
-        cat $(Agent.HomeDirectory)/.ssh/config
+        mkdir ~/.ssh
+        chmod 700 ~/.ssh
+        echo "Host github.com" >> ~/.ssh/config
+        echo "  HostName github.com" >> ~/.ssh/config
+        echo "  IdentityFile ~/.ssh/$(sshPrivateKeyFileName)" >> ~/.ssh/config
+        cat ~/.ssh/config
       displayName: Create ssh config file
 
     - task: DownloadSecureFile@1
@@ -80,11 +78,9 @@ stages:
       inputs:
         SourceFolder: $(Agent.TempDirectory)
         Contents: $(sshPrivateKeyFileName)
-        TargetFolder: $(Agent.HomeDirectory)/.ssh
+        TargetFolder: ~/.ssh
 
     - script: |
-        cat ~/.ssh/config
-        eval $(ssh-agent -s)
         git clone $(gitHubUrl)
         cd $(repositoryDir)
         git config user.name "$(gitHubConfigUserName)"
