@@ -61,12 +61,8 @@ stages:
     #     secretsFilter: $(keyVaultKeyNameForGitHubAccess)
 
     - script: |
-        mkdir ~/.ssh
-        chmod 700 ~/.ssh
-        echo "Host github.com" >> ~/.ssh/config
-        echo "  HostName github.com" >> ~/.ssh/config
-        echo "  IdentityFile ~/.ssh/$(sshPrivateKeyFileName)" >> ~/.ssh/config
-        cat ~/.ssh/config
+        mkdir -p $(Pipeline.Workspace)/ssh
+        chmod $(Pipeline.Workspace)/ssh
       displayName: Create ssh config file
 
     - task: DownloadSecureFile@1
@@ -78,9 +74,11 @@ stages:
       inputs:
         SourceFolder: $(Agent.TempDirectory)
         Contents: $(sshPrivateKeyFileName)
-        TargetFolder: ~/.ssh
+        TargetFolder: $(Pipeline.Workspace)/ssh
 
     - script: |
+        eval $(ssh-agent -s)
+        ssh-add $(Pipeline.Workspace)/ssh/$(sshPrivateKeyFileName)
         git clone $(gitHubUrl)
         cd $(repositoryDir)
         git config user.name "$(gitHubConfigUserName)"
@@ -122,7 +120,8 @@ stages:
     #   artifact: drop
 
     - script: |
-        pwd
+        eval $(ssh-agent -s)
+        ssh-add $(Pipeline.Workspace)/ssh/$(sshPrivateKeyFileName)
         git add $(functionsPackagesDir)/$(functionsPackageName)
         git commit -m "Update the function package"
         git push origin $(Build.SourceBranchName)
