@@ -61,11 +61,12 @@ stages:
     #     secretsFilter: $(keyVaultKeyNameForGitHubAccess)
 
     - script: |
-        mkdir ~/.ssh
-        chmod 700 ~/.ssh
-        echo "Host github.com" >> ~/.ssh/config
-        echo "  hostName github.com" >> ~/.ssh/config
-        echo "  IdentityFile ~/.ssh/$(sshPrivateKeyFileName)" >> ~/.ssh/config
+        mkdir ~$(Agent.HomeDirectory)/.ssh
+        chmod 700 $(Agent.HomeDirectory)/.ssh
+        echo "Host github.com" >> $(Agent.HomeDirectory)/.ssh/config
+        echo "  hostName github.com" >> $(Agent.HomeDirectory)/.ssh/config
+        echo "  IdentityFile ~/.ssh/$(sshPrivateKeyFileName)" >> $(Agent.HomeDirectory)/.ssh/config
+        cat $(Agent.HomeDirectory)/.ssh/config
       displayName: Create ssh config file
 
     - task: DownloadSecureFile@1
@@ -77,7 +78,7 @@ stages:
       inputs:
         SourceFolder: $(Agent.TempDirectory)
         Contents: $(sshPrivateKeyFileName)
-        TargetFolder: ~/.ssh
+        TargetFolder: $(Agent.HomeDirectory)/.ssh
 
     - script: |
         git clone $(gitHubUrl)
@@ -86,7 +87,7 @@ stages:
         git config user.email "$(gitHubConfigUserEmail)"
         git switch -c $(Build.SourceBranchName) --track origin/$(Build.SourceBranchName)
       displayName: Clone the repository to push later
-      workingDirectory: $(Agent.TempDirectory)
+      workingDirectory: $(Agent.HomeDirectory)
 
     - task: NodeTool@0
       inputs:
@@ -114,7 +115,7 @@ stages:
         rootFolderOrFile: $(System.DefaultWorkingDirectory)/$(targetDir)
         includeRootFolder: false
         archiveType: zip
-        archiveFile: $(Agent.TempDirectory)/$(repositoryDir)/$(functionsPackagesDir)/$(functionsPackageName)
+        archiveFile: $(Agent.HomeDirectory)/$(repositoryDir)/$(functionsPackagesDir)/$(functionsPackageName)
         replaceExistingArchive: true
 
     # - upload: $(Build.ArtifactStagingDirectory)/$(Build.BuildId).zip
@@ -126,7 +127,7 @@ stages:
         git commit -m "Update the function package"
         git push origin $(Build.SourceBranchName)
       displayName: Push zip archive to the branch
-      workingDirectory: $(Agent.TempDirectory)/$(repositoryDir)
+      workingDirectory: $(Agent.HomeDirectory)/$(repositoryDir)
 
 # - stage: Deploy
 #   displayName: Deploy stage
