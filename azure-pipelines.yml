@@ -27,6 +27,8 @@ variables:
   # Agent VM image name
   vmImageName: 'ubuntu-latest'
 
+  targetDir: functions
+
 stages:
 - stage: Build
   displayName: Build stage
@@ -42,23 +44,26 @@ stages:
         versionSpec: '12.x'
       displayName: 'Install Node.js'
 
+    - 
     - script: |
         if [ -f extensions.csproj ]
         then
             dotnet build extensions.csproj --runtime ubuntu.16.04-x64 --output ./bin
         fi
       displayName: 'Build extensions'
+      workingDirectory: $(targetDir)
 
     - script: |
         npm install
         npm run build --if-present
         npm run test --if-present
       displayName: 'Prepare binaries'
-      
+      workingDirectory: $(targetDir)
+
     - task: ArchiveFiles@2
       displayName: 'Archive files'
       inputs:
-        rootFolderOrFile: '$(System.DefaultWorkingDirectory)'
+        rootFolderOrFile: '$(System.DefaultWorkingDirectory)/$(targetDir)'
         includeRootFolder: false
         archiveType: zip
         archiveFile: $(Build.ArtifactStagingDirectory)/$(Build.BuildId).zip
