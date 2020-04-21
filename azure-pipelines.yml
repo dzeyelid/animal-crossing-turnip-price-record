@@ -16,7 +16,7 @@ trigger:
 variables:
 
   # Azure Resource Manager connection created during pipeline creation
-  azureSubscription: $(azureSubscription)
+  # azureSubscription: $(azureSubscription)
 
   # # Function app name
   # functionAppName: ''
@@ -29,8 +29,12 @@ variables:
 
   targetDir: functions
 
-  keyVaultName: 'azure-devops-integration'
-  keyVaultKeyNameForGitHubAccess: 'github-access'
+  # keyVaultName: 'azure-devops-integration'
+  # keyVaultKeyNameForGitHubAccess: 'github-access'
+  sshPrivateKeyFileName: 'id_rsa-devops'
+
+  functionsPackagesDir: 'arm-templates/function-packages'
+  functionsPackageName: 'functions.zip'
 
 stages:
 - stage: Build
@@ -43,11 +47,11 @@ stages:
       
     steps:
 
-    - task: AzureKeyVault@1
-      inputs:
-        azureSubscription: $(azureSubscription)
-        keyVaultName: $(keyVaultname)
-        secretsFilter: $(keyVaultKeyNameForGitHubAccess)
+    # - task: AzureKeyVault@1
+    #   inputs:
+    #     azureSubscription: $(azureSubscription)
+    #     keyVaultName: $(keyVaultname)
+    #     secretsFilter: $(keyVaultKeyNameForGitHubAccess)
 
     - task: NodeTool@0
       inputs:
@@ -60,26 +64,43 @@ stages:
             dotnet build extensions.csproj --runtime ubuntu.16.04-x64 --output ./bin
         fi
       displayName: 'Build extensions'
-      workingDirectory: $(targetDir)
+      workingDirectory: $(System.DefaultWorkingDirectory)/$(targetDir)
 
     - script: |
         npm install
         npm run build --if-present
         npm run test --if-present
       displayName: 'Prepare binaries'
-      workingDirectory: $(targetDir)
+      workingDirectory: $(System.DefaultWorkingDirectory)/$(targetDir)
 
     - task: ArchiveFiles@2
       displayName: 'Archive files'
       inputs:
-        rootFolderOrFile: '$(System.DefaultWorkingDirectory)/$(targetDir)'
+        rootFolderOrFile: $(System.DefaultWorkingDirectory)/$(targetDir)
         includeRootFolder: false
         archiveType: zip
-        archiveFile: $(Build.ArtifactStagingDirectory)/$(Build.BuildId).zip
+        archiveFile: $(System.DefaultWorkingDirectory)/$(functionsPackagesDir)/$(functionsPackageName)
         replaceExistingArchive: true
 
-    - upload: $(Build.ArtifactStagingDirectory)/$(Build.BuildId).zip
-      artifact: drop
+    # - upload: $(Build.ArtifactStagingDirectory)/$(Build.BuildId).zip
+    #   artifact: drop
+
+    - task: DownloadSecureFile@1
+      name: downloadedSshPrivateKey
+      inputs:
+        secureFile: $(sshPrivateKeyFileName)
+
+    - task: CopyFiles@2
+      inputs:
+        SourceFolder: $(Agent.TempDirectory)
+        Contents: $(sshPrivateKeyFileName)
+        TargetFolder: '~/.ssh/'
+
+    - script: |
+        git add $(functionsPackagesDir)/$(functionsPackageName)
+        git commit -m "Update the function package"
+        git push origin $(Build.SourceBranchName)
+      displayName: Push zip archive to the branch
 
 # - stage: Deploy
 #   displayName: Deploy stage
