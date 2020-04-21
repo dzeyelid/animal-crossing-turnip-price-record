@@ -61,7 +61,7 @@ stages:
     #     secretsFilter: $(keyVaultKeyNameForGitHubAccess)
 
     - script: |
-        mkdir ~$(Agent.HomeDirectory)/.ssh
+        mkdir $(Agent.HomeDirectory)/.ssh
         chmod 700 $(Agent.HomeDirectory)/.ssh
         echo "Host github.com" >> $(Agent.HomeDirectory)/.ssh/config
         echo "  hostName github.com" >> $(Agent.HomeDirectory)/.ssh/config
@@ -87,7 +87,7 @@ stages:
         git config user.email "$(gitHubConfigUserEmail)"
         git switch -c $(Build.SourceBranchName) --track origin/$(Build.SourceBranchName)
       displayName: Clone the repository to push later
-      workingDirectory: $(Agent.HomeDirectory)
+      workingDirectory: $(Pipeline.Workspace)
 
     - task: NodeTool@0
       inputs:
@@ -115,7 +115,7 @@ stages:
         rootFolderOrFile: $(System.DefaultWorkingDirectory)/$(targetDir)
         includeRootFolder: false
         archiveType: zip
-        archiveFile: $(Agent.HomeDirectory)/$(repositoryDir)/$(functionsPackagesDir)/$(functionsPackageName)
+        archiveFile: $(Pipeline.Workspace)/$(repositoryDir)/$(functionsPackagesDir)/$(functionsPackageName)
         replaceExistingArchive: true
 
     # - upload: $(Build.ArtifactStagingDirectory)/$(Build.BuildId).zip
@@ -127,7 +127,7 @@ stages:
         git commit -m "Update the function package"
         git push origin $(Build.SourceBranchName)
       displayName: Push zip archive to the branch
-      workingDirectory: $(Agent.HomeDirectory)/$(repositoryDir)
+      workingDirectory: $(Pipeline.Workspace)/$(repositoryDir)
 
 # - stage: Deploy
 #   displayName: Deploy stage
