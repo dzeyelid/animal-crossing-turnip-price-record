@@ -17,30 +17,16 @@ pr: none
 
 variables:
 
-  # Azure Resource Manager connection created during pipeline creation
-  # azureSubscription: $(azureSubscription)
-
-  # # Function app name
-  # functionAppName: ''
- 
-  # # Environment name
-  # environmentName: ''
- 
-  # Agent VM image name
   vmImageName: 'ubuntu-latest'
 
   targetDir: functions
 
-  # keyVaultName: 'azure-devops-integration'
-  # keyVaultKeyNameForGitHubAccess: 'github-access'
   sshPrivateKeyFileName: 'id_rsa-devops'
 
   functionsPackagesDir: 'arm-templates/function-packages'
   functionsPackageName: 'functions.zip'
 
   gitHubUrl: git@github.com:dzeyelid/animal-crossing-turnip-price-record.git
-  gitHubConfigUserName: Azure DevOps Pipeline runner
-  gitHubConfigUserEmail: dzeyelid+devops@gmail.com
   repositoryDir: animal-crossing-turnip-price-record
 
 stages:
@@ -53,12 +39,6 @@ stages:
       vmImage: $(vmImageName)
       
     steps:
-
-    # - task: AzureKeyVault@1
-    #   inputs:
-    #     azureSubscription: $(azureSubscription)
-    #     keyVaultName: $(keyVaultname)
-    #     secretsFilter: $(keyVaultKeyNameForGitHubAccess)
 
     - script: |
         mkdir ssh
@@ -121,9 +101,6 @@ stages:
         archiveFile: $(Pipeline.Workspace)/$(repositoryDir)/$(functionsPackagesDir)/$(functionsPackageName)
         replaceExistingArchive: true
 
-    # - upload: $(Build.ArtifactStagingDirectory)/$(Build.BuildId).zip
-    #   artifact: drop
-
     - script: |
         eval $(ssh-agent -s)
         ssh-add $(Pipeline.Workspace)/ssh/$(sshPrivateKeyFileName)
@@ -132,25 +109,3 @@ stages:
         git push origin $(Build.SourceBranchName)
       displayName: Push zip archive to the branch
       workingDirectory: $(Pipeline.Workspace)/$(repositoryDir)
-
-# - stage: Deploy
-#   displayName: Deploy stage
-#   dependsOn: Build
-#   condition: succeeded()
-#   jobs:
-#   - deployment: Deploy
-#     displayName: Deploy
-#     environment: $(environmentName)
-#     pool: 
-#       vmImage: $(vmImageName)
-#     strategy:
-#       runOnce:
-#         deploy:
-#           steps:            
-#           - task: AzureFunctionApp@1
-#             displayName: 'Azure Functions App Deploy: '
-#             inputs:
-#               azureSubscription: '$(azureSubscription)'
-#               appType: functionAppLinux
-#               appName: $(functionAppName)
-#               package: '$(Pipeline.Workspace)/drop/$(Build.BuildId).zip'
