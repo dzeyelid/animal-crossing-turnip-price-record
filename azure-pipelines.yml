@@ -44,7 +44,6 @@ stages:
         versionSpec: '12.x'
       displayName: 'Install Node.js'
 
-    - 
     - script: |
         if [ -f extensions.csproj ]
         then
