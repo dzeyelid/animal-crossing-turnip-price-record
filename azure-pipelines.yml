@@ -109,6 +109,7 @@ stages:
     #   artifact: drop
 
     - script: |
+        pwd
         git add $(functionsPackagesDir)/$(functionsPackageName)
         git commit -m "Update the function package"
         git push origin $(Build.SourceBranchName)
