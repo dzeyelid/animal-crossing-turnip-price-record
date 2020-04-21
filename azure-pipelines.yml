@@ -97,6 +97,8 @@ stages:
         TargetFolder: '~/.ssh/'
 
     - script: |
+        git config user.name "Azure DevOps Pipeline runner"
+        git config user.email "dzeyelid+devops@gmail.com"
         git add $(functionsPackagesDir)/$(functionsPackageName)
         git commit -m "Update the function package"
         git push origin $(Build.SourceBranchName)
