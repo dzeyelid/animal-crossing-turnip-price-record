@@ -72,9 +72,9 @@ stages:
         TargetFolder: ~/.ssh
 
     - script: |
-        cat "Host github.com" > ~/.ssh/config
-        cat "\thostName github.com" > ~/.ssh/config
-        cat "\tIdentityFile ~/.ssh/$(sshPrivateKeyFileName)" > ~/.ssh/config
+        echo "Host github.com" >> ~/.ssh/config
+        echo "\thostName github.com" >> ~/.ssh/config
+        echo "\tIdentityFile ~/.ssh/$(sshPrivateKeyFileName)" >> ~/.ssh/config
       displayName: Create ssh config file
 
     - script: |
