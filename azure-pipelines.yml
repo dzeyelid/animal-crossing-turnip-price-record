@@ -100,9 +100,6 @@ stages:
         eval $(ssh-agent -s)
         chmod 600 $(Agent.TempDirectory)/$(sshPrivateKeyFileName)
         ssh-add $(Agent.TempDirectory)/$(sshPrivateKeyFileName)
-      displayName: Enable ssh private file
-
-    - script: |
         git clone $(gitHubUrl)
         git config user.name $(gitHubConfigUserName)
         git config user.email $(gitHubConfigUserEmail)
