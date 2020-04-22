@@ -45,6 +45,7 @@ stages:
         echo "Host github.com" >> ~/.ssh/config
         echo "  HostName github.com" >> ~/.ssh/config
         echo "  IdentityFile $(Agent.TempDirectory)/$(sshPrivateKeyFileName)" >> ~/.ssh/config
+        chmod 600 $(Agent.TempDirectory)/$(sshPrivateKeyFileName)
       displayName: Set up ssh config file
 
     - script: |
