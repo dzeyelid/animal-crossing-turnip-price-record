@@ -1,0 +1,56 @@
+# Starter pipeline
+# Start with a minimal pipeline that you can customize to build and deploy your code.
+# Add steps that build, run tests, deploy, and more:
+# https://aka.ms/yaml
+
+trigger:
+  branches:
+    include:
+    - '*'
+    exclude:
+    - master
+
+pr: none
+
+variables:
+  vmImageName: 'ubuntu-latest'
+  sshPrivateKeyFileName: 'id_rsa-devops'
+
+stages:
+- stage: Test
+  displayName: Test stage
+  jobs:
+  - job: Test
+    displayName: Test
+    pool:
+      vmImage: $(vmImageName)
+
+    steps:
+    - script: |
+        echo '~ =' ~
+        echo 'Agent.HomeDirectory =' $(Agent.HomeDirectory)
+      displayName: 'Check the paths'
+
+    - task: DownloadSecureFile@1
+      name: sshPrivateKey
+      inputs:
+        secureFile: $(sshPrivateKeyFileName)
+
+    - script: |
+        ls -la $(Agent.TempDirectory)
+        touch ~/.ssh/config
+        chmod 600 ~/.ssh/config
+        echo "Host github.com" >> ~/.ssh/config
+        echo "  HostName github.com" >> ~/.ssh/config
+        echo "  IdentityFile $(Agent.TempDirectory)/$(sshPrivateKeyFileName)" >> ~/.ssh/config
+      displayName: Set up ssh config file
+
+    - script: |
+        git clone $(gitHubUrl)
+        cd $(gitHubRepositoryName)
+        git config user.name "$(gitHubConfigUserName)"
+        git config user.email "$(gitHubConfigUserEmail)"
+        git switch -c $(Build.SourceBranchName) --track origin/$(Build.SourceBranchName)
+        git branch
+      displayName: Git colone
+      workingDirectory: $(Pipeline.Workspace)
