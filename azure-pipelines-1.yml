@@ -50,7 +50,7 @@ stages:
 
     - task: InstallSSHKey@0
       inputs:
-        knownHostsEntry: 'github.com'
+        hostName: 'github.com'
         sshPublicKey: $(sshPublicKey)
         sshKeySecureFile: $(sshPrivateKeyFileName)
 
