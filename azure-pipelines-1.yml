@@ -31,29 +31,45 @@ stages:
         echo 'Agent.HomeDirectory =' $(Agent.HomeDirectory)
       displayName: 'Check the paths'
 
-    - task: DownloadSecureFile@1
-      name: sshPrivateKey
+    # - task: DownloadSecureFile@1
+    #   name: sshPrivateKey
+    #   inputs:
+    #     secureFile: $(sshPrivateKeyFileName)
+
+    # - script: |
+    #     ls -la $(Agent.TempDirectory)
+    #     mkdir ~/.ssh
+    #     chmod 700 ~/.ssh
+    #     touch ~/.ssh/config
+    #     chmod 600 ~/.ssh/config
+    #     echo "Host github.com" >> ~/.ssh/config
+    #     echo "  HostName github.com" >> ~/.ssh/config
+    #     echo "  IdentityFile $(Agent.TempDirectory)/$(sshPrivateKeyFileName)" >> ~/.ssh/config
+    #     chmod 600 $(Agent.TempDirectory)/$(sshPrivateKeyFileName)
+    #   displayName: Set up ssh config file
+
+    - task: InstallSSHKey@0
       inputs:
-        secureFile: $(sshPrivateKeyFileName)
+        knownHostsEntry: 'github.com'
+        sshPublicKey: $(sshPublicKey)
+        sshKeySecureFile: $(sshPrivateKeyFileName)
 
     - script: |
-        ls -la $(Agent.TempDirectory)
-        mkdir ~/.ssh
-        chmod 700 ~/.ssh
-        touch ~/.ssh/config
-        chmod 600 ~/.ssh/config
-        echo "Host github.com" >> ~/.ssh/config
-        echo "  HostName github.com" >> ~/.ssh/config
-        echo "  IdentityFile $(Agent.TempDirectory)/$(sshPrivateKeyFileName)" >> ~/.ssh/config
-        chmod 600 $(Agent.TempDirectory)/$(sshPrivateKeyFileName)
-      displayName: Set up ssh config file
-
-    - script: |
-        git clone $(gitHubUrl)
-        cd $(gitHubRepositoryName)
         git config user.name "$(gitHubConfigUserName)"
         git config user.email "$(gitHubConfigUserEmail)"
         git switch -c $(Build.SourceBranchName) --track origin/$(Build.SourceBranchName)
         git branch
-      displayName: Git colone
-      workingDirectory: $(Pipeline.Workspace)
+        git commit --allow-empty -m "Test commit"
+        git push origin $(Build.SourceBranchName)
+      displayName: Git commit and push
+
+
+    # - script: |
+    #     git clone $(gitHubUrl)
+    #     cd $(gitHubRepositoryName)
+    #     git config user.name "$(gitHubConfigUserName)"
+    #     git config user.email "$(gitHubConfigUserEmail)"
+    #     git switch -c $(Build.SourceBranchName) --track origin/$(Build.SourceBranchName)
+    #     git branch
+    #   displayName: Git colone
+    #   workingDirectory: $(Pipeline.Workspace)
