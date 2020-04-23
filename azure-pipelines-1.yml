@@ -55,8 +55,8 @@ stages:
         sshKeySecureFile: $(sshPrivateKeyFileName)
 
     - script: |
-        git config user.name "$(gitHubConfigUserName)"
-        git config user.email "$(gitHubConfigUserEmail)"
+        git config --global user.name "$(gitHubConfigUserName)"
+        git config --global user.email "$(gitHubConfigUserEmail)"
         git switch -c $(Build.SourceBranchName) --track origin/$(Build.SourceBranchName)
         git branch
         git commit --allow-empty -m "Test commit"
