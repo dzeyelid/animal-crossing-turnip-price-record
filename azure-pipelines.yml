@@ -39,31 +39,13 @@ stages:
       vmImage: $(vmImageName)
       
     steps:
-
-    - script: |
-        mkdir ssh
-      displayName: Create a directoty to store ssh files
-      workingDirectory: $(Pipeline.Workspace)
-
-    - task: DownloadSecureFile@1
-      name: downloadedSshPrivateKey
+    - task: InstallSSHKey@0
       inputs:
-        secureFile: $(sshPrivateKeyFileName)
-
-    - task: CopyFiles@2
-      inputs:
-        SourceFolder: $(Agent.TempDirectory)
-        Contents: $(sshPrivateKeyFileName)
-        TargetFolder: $(Pipeline.Workspace)/ssh
+        knownHostsEntry: 'github.com'
+        sshPublicKey: $(sshPublicKey)
+        sshKeySecureFile: $(sshPrivateKeyFileName)
 
     - script: |
-        chmod 600 ssh/$(sshPrivateKeyFileName)
-      displayName: Change mode of ssh private key file
-      workingDirectory: $(Pipeline.Workspace)
-
-    - script: |
-        eval $(ssh-agent -s)
-        ssh-add $(Pipeline.Workspace)/ssh/$(sshPrivateKeyFileName)
         git clone $(gitHubUrl)
         cd $(repositoryDir)
         git config user.name "$(gitHubConfigUserName)"
@@ -102,8 +84,6 @@ stages:
         replaceExistingArchive: true
 
     - script: |
-        eval $(ssh-agent -s)
-        ssh-add $(Pipeline.Workspace)/ssh/$(sshPrivateKeyFileName)
         git add $(functionsPackagesDir)/$(functionsPackageName)
         git commit -m "Update the function package"
         git push origin $(Build.SourceBranchName)
