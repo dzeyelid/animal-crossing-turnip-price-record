@@ -54,22 +54,27 @@ stages:
         sshPublicKey: $(sshPublicKey)
         sshKeySecureFile: $(sshPrivateKeyFileName)
 
+    # - script: |
+    #     git config user.name "$(gitConfigUserName)"
+    #     git config user.email "$(gitConfigUserEmail)"
+    #     git switch -c $(Build.SourceBranchName) --track origin/$(Build.SourceBranchName)
+    #     git branch
+    #     git commit --allow-empty -m "Test commit"
+    #     git push origin $(Build.SourceBranchName)
+    #   displayName: Git commit and push
+
     - script: |
+        git clone $(gitHubUrl)
+        cd $(gitHubRepositoryName)
         git config user.name "$(gitConfigUserName)"
         git config user.email "$(gitConfigUserEmail)"
         git switch -c $(Build.SourceBranchName) --track origin/$(Build.SourceBranchName)
         git branch
+      displayName: Git clone
+      workingDirectory: $(Pipeline.Workspace)
+
+    - script: |
         git commit --allow-empty -m "Test commit"
         git push origin $(Build.SourceBranchName)
       displayName: Git commit and push
-
-
-    # - script: |
-    #     git clone $(gitHubUrl)
-    #     cd $(gitHubRepositoryName)
-    #     git config user.name "$(gitHubConfigUserName)"
-    #     git config user.email "$(gitHubConfigUserEmail)"
-    #     git switch -c $(Build.SourceBranchName) --track origin/$(Build.SourceBranchName)
-    #     git branch
-    #   displayName: Git colone
-    #   workingDirectory: $(Pipeline.Workspace)
+      workingDirectory: $(Pipeline.Workspace)/$(gitHubRepositoryName)
