@@ -9,6 +9,9 @@ trigger:
     - '*'
     exclude:
     - master
+  paths:
+    include:
+      - functions/*
 
 pr: none
 
@@ -50,7 +53,7 @@ stages:
 
     - task: InstallSSHKey@0
       inputs:
-        hostName: 'github.com'
+        knownHostsEntry: 'github.com'
         sshPublicKey: $(sshPublicKey)
         sshKeySecureFile: $(sshPrivateKeyFileName)
 
