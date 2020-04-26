@@ -1,0 +1,83 @@
+# Starter pipeline
+# Start with a minimal pipeline that you can customize to build and deploy your code.
+# Add steps that build, run tests, deploy, and more:
+# https://aka.ms/yaml
+
+trigger:
+  branches:
+    include:
+    - '*'
+    exclude:
+    - master
+  paths:
+    include:
+      - functions/*
+
+pr: none
+
+variables:
+  vmImageName: 'ubuntu-latest'
+  sshPrivateKeyFileName: 'id_rsa-devops'
+
+stages:
+- stage: Test
+  displayName: Test stage
+  jobs:
+  - job: Test
+    displayName: Test
+    pool:
+      vmImage: $(vmImageName)
+
+    steps:
+    - script: |
+        echo '~ =' ~
+        echo 'Agent.HomeDirectory =' $(Agent.HomeDirectory)
+      displayName: 'Check the paths'
+
+    # - task: DownloadSecureFile@1
+    #   name: sshPrivateKey
+    #   inputs:
+    #     secureFile: $(sshPrivateKeyFileName)
+
+    # - script: |
+    #     ls -la $(Agent.TempDirectory)
+    #     mkdir ~/.ssh
+    #     chmod 700 ~/.ssh
+    #     touch ~/.ssh/config
+    #     chmod 600 ~/.ssh/config
+    #     echo "Host github.com" >> ~/.ssh/config
+    #     echo "  HostName github.com" >> ~/.ssh/config
+    #     echo "  IdentityFile $(Agent.TempDirectory)/$(sshPrivateKeyFileName)" >> ~/.ssh/config
+    #     chmod 600 $(Agent.TempDirectory)/$(sshPrivateKeyFileName)
+    #   displayName: Set up ssh config file
+
+    - task: InstallSSHKey@0
+      inputs:
+        knownHostsEntry: 'github.com'
+        sshPublicKey: $(sshPublicKey)
+        sshKeySecureFile: $(sshPrivateKeyFileName)
+
+    # - script: |
+    #     git config user.name "$(gitConfigUserName)"
+    #     git config user.email "$(gitConfigUserEmail)"
+    #     git switch -c $(Build.SourceBranchName) --track origin/$(Build.SourceBranchName)
+    #     git branch
+    #     git commit --allow-empty -m "Test commit"
+    #     git push origin $(Build.SourceBranchName)
+    #   displayName: Git commit and push
+
+    - script: |
+        git clone $(gitHubUrl)
+        cd $(gitHubRepositoryName)
+        git config user.name "$(gitConfigUserName)"
+        git config user.email "$(gitConfigUserEmail)"
+        git switch -c $(Build.SourceBranchName) --track origin/$(Build.SourceBranchName)
+        git branch
+      displayName: Git clone
+      workingDirectory: $(Pipeline.Workspace)
+
+    - script: |
+        git commit --allow-empty -m "Test commit"
+        git push origin $(Build.SourceBranchName)
+      displayName: Git commit and push
+      workingDirectory: $(Pipeline.Workspace)/$(gitHubRepositoryName)
